@@ -2,7 +2,7 @@
 
 运维故障分诊工具：**一键采集现场 → 规则匹配根因 → 输出 JSON → LLM 生成 Runbook → 静态页面回看报告**。适用于常见故障场景：SELinux 拦截、连接拒绝（Connection refused）、超时（Timeout）、DNS 解析失败等。
 
-> 面试官友好版：打开仓库即可理解流程，复制文件即可复现，支持 GitHub Pages 演示。
+打开仓库即可理解流程，复制文件即可复现，支持 GitHub Pages 演示。
 
 ---
 
