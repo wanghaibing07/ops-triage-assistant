@@ -48,13 +48,13 @@ Runbook JSON       静态报告查看器
 
 ```bash
 # 1) 采集现场
-./triage/bin/triage_collect.sh
+./bin/triage_collect.sh
 
 # 2) 规则分析（把采集包变成 JSON 报告）
-python3 triage/bin/triage_analyze.py /tmp/triage-bundle_<HOST>_<TS>.tar.gz
+python3 bin/triage_analyze.py /tmp/triage-bundle_<HOST>_<TS>.tar.gz
 
 # 3) LLM 生成 Runbook（结构化 JSON）
-python3 triage/bin/triage_llm.py triage/out/report_<HOST>_<TS>.json
+python3 bin/triage_llm.py output/report_<HOST>_<TS>.json
 ```
 
 小贴士：如果你只是想快速体验静态报告，可以直接打开 `docs/index.html`。
@@ -77,6 +77,14 @@ python3 triage/bin/triage_llm.py triage/out/report_<HOST>_<TS>.json
 
 ---
 
+## 文档导航
+
+- 架构与流程说明：`docs/architecture.md`
+- 贡献指南：`CONTRIBUTING.md`
+- 版本记录：`CHANGELOG.md`
+
+---
+
 ## Security（安全边界与脱敏）
 
 - **不提交密钥**：不要把 `.env`、API Key、密码写入仓库。
@@ -94,7 +102,7 @@ python3 triage/bin/triage_llm.py triage/out/report_<HOST>_<TS>.json
 
 ---
 
-## 推荐目录结构（MVP）
+## 目录结构（MVP）
 
 ```
 .
@@ -102,13 +110,15 @@ python3 triage/bin/triage_llm.py triage/out/report_<HOST>_<TS>.json
 ├── docs/                # GitHub Pages 静态展示
 │   ├── index.html
 │   └── reports/
-├── samples/             # 样例采集包/报告
+├── output/              # 产物输出（报告 JSON/TXT）
+├── scripts/             # 安装与部署脚本
+├── samples/             # 样例采集包/报告（可选）
 ├── .github/workflows/   # CI
 ├── README.md
 └── .gitignore
 ```
 
-> 当前仓库中 `triage/bin` 对应 **bin/**；`docs/` 已用于静态报告；`docs/reports/` 可视为 **samples** 的展示集合。
+> 当前仓库中 `bin/` 提供采集与分析入口；`output/` 存放分析产物；`docs/` 提供静态报告；`docs/reports/` 作为 GitHub Pages 演示数据。
 
 ---
 
