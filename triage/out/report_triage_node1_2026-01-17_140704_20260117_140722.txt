@@ -1,82 +1,15 @@
-=== TRIAGE REPORT ===
-Bundle: /tmp/triage-bundle_node1_2026-01-17_140704.tar.gz
-HostDir: triage_node1_2026-01-17_140704
+🕵️‍♂️ Triage Report: Nginx Connection IssuesBundle: /tmp/triage-bundle_generic_node_masked.tar.gzHostDir: triage_node_generic_maskedGenerated At: 2026-01-17 14:07:22🚨 Primary FindingRule ID: NGINX_UPSTREAM_SELINUX (Priority: P0)🔴 Root Cause: Nginx 反向代理请求被 SELinux 拦截。解释：SELinux 的 httpd_t 上下文默认禁止 Nginx/Apache 发起主动的网络连接（如连接上游 Tomcat）。🛠️ Detailed Findings & Fixes[1] SELinux Blocking Upstream Connection (P0)Symptoms:Nginx 错误日志出现 Permission denied (13)。请求无法到达上游服务器，直接在 Nginx 层面被内核拦截。✅ How to Fix:允许 HTTPD 进程发起网络连接：setsebool -P httpd_can_network_connect 1
+重启 Nginx 服务：systemctl restart nginx
+🔎 How to Verify:检查 SELinux 状态：getenforce查看日志尾部：tail -n 50 /var/log/nginx/error.log📄 Evidence Snippet:===== 40_nginx_error_tail.txt =====
 
-Primary: NGINX_UPSTREAM_SELINUX (P0)
-Cause: Nginx 反代被 SELinux 拦截（httpd_t 默认禁止主动网络连接）
+# 关键特征：errno 13 (Permission denied)
+2025/12/28 01:29:07 [crit] 28920#28920: *1 connect() to <Upstream_IP>:8080 failed (13: Permission denied) while connecting to upstream, client: <Client_IP>, server: _, request: "GET / HTTP/1.1", upstream: "http://<Upstream_IP>:8080/", host: "<Nginx_Node_IP>"
+...
+2025/12/28 01:29:34 [crit] 28933#28933: *6 connect() to <Upstream_IP>:8080 failed (13: Permission denied) while connecting to upstream, client: <Client_IP>, server: _, request: "GET /nginx-logo.png HTTP/1.1", upstream: "http://<Upstream_IP>:8080/nginx-logo.png", host: "<Nginx_Node_IP>", referrer: "http://<Nginx_Node_IP>/"
+[2] Upstream Connection Refused (P1)Symptoms:Nginx 错误日志出现 Connection refused (111)。请求已发出，但目标端口拒绝连接（通常是服务未启动或防火墙阻挡）。✅ How to Fix:确认上游应用（如 Tomcat）是否正在监听 8080 端口。检查防火墙/安全组是否允许入站 8080 流量。🔎 How to Verify:测试连通性：curl -I http://<upstream>:8080/检查端口监听：ss -lntp | grep 8080📄 Evidence Snippet:===== 40_nginx_error_tail.txt =====
 
-[1] NGINX_UPSTREAM_SELINUX P0
-Cause: Nginx 反代被 SELinux 拦截（httpd_t 默认禁止主动网络连接）
-Verify:
-  - getenforce
-  - tail -n 50 /var/log/nginx/error.log
-Fix:
-  - setsebool -P httpd_can_network_connect 1
-  - systemctl restart nginx
-Evidence snippet:
-xguest_mount_media --> on
-xguest_use_bluetooth --> on
-xserver_clients_write_xshm --> off
-xserver_execmem --> off
-xserver_object_manager --> off
-zabbix_can_network --> off
-zabbix_run_sudo --> off
-zarafa_setrlimit --> off
-zebra_write_config --> off
-zoneminder_anon_write --> off
-zoneminder_run_sudo --> off
-
-
-===== 40_nginx_error_tail.txt =====
-
-2025/12/28 01:29:07 [crit] 28920#28920: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET / HTTP/1.1", upstream: "http://192.168.200.200:8080/", host: "192.168.200.100"
-2025/12/28 01:29:07 [crit] 28920#28920: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /nginx-logo.png HTTP/1.1", upstream: "http://192.168.200.200:8080/nginx-logo.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:29:07 [crit] 28920#28920: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /favicon.ico HTTP/1.1", upstream: "http://192.168.200.200:8080/favicon.ico", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:29:30 [notice] 28932#28932: signal process started
-2025/12/28 01:29:34 [crit] 28920#28920: *2 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET / HTTP/1.1", upstream: "http://192.168.200.200:8080/", host: "192.168.200.100"
-2025/12/28 01:29:34 [crit] 28933#28933: *6 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /nginx-logo.png HTTP/1.1", upstream: "http://192.168.200.200:8080/nginx-logo.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:29:34 [crit] 28933#28933: *6 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /favicon.ico HTTP/1.1", upstream: "http://192.168.200.200:8080/favicon.ico", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:31:55 [crit] 28934#28934: *10 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET / HTTP/1.1", upstream: "http://192.168.200.200:8080/", host: "192.168.200.100"
-2025/12/28 01:31:55 [crit] 28934#28934: *10 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /nginx-logo.png HTTP/1.1", upstream: "http://192.168.200.200:8080/nginx-logo.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:31:56 [crit] 28934#28934: *10 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /favicon.ico HTTP/1.1", upstream: "http://192.168.200.200:8080/favicon.ico", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:32:11 [notice] 28990#28990: signal process started
-2025/12/28 01:32:13 [crit] 28992#28992: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET / HTTP/1.1", upstream: "http://192.168.200.200:8080/", host: "192.168.200.100"
-2025/12/28 01:32:13 [crit] 28992#28992: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /nginx-logo.png HTTP/1.1", upstream: "http://192.168.200.200:8080/nginx-logo.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:32:14 [crit] 28992#28992: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /favicon.ico HTTP/1.1", upstream: "http://192.168.200.200:8080/favicon.ico", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:32:15 [crit] 28992#28992: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET / HTTP/1.1", upstream: "http://192.168.200.200:8080/", host: "192.168.200.100"
-2025/12/28 01:32:15 [crit] 28992#28992: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /nginx-logo.png HTTP/1.1", upstream: "http://192.168.200.200:8080/nginx-logo.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-
-[2] NGINX_UPSTREAM_REFUSED P1
-Cause: 上游端口拒绝：上游服务未监听/宕机/端口不对
-Verify:
-  - curl -I http://<upstream>:8080/
-  - ss -lntp | grep 8080
-Fix:
-  - 确认 Tomcat/应用监听 8080
-  - 检查防火墙/安全组放行 8080
-Evidence snippet:
-2025/12/28 01:35:25 [crit] 29039#29039: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /poweredby.png HTTP/1.1", upstream: "http://192.168.200.200:8080/poweredby.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:35:25 [crit] 29039#29039: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /favicon.ico HTTP/1.1", upstream: "http://192.168.200.200:8080/favicon.ico", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:35:51 [crit] 29039#29039: *11 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET / HTTP/1.1", upstream: "http://192.168.200.200:8080/", host: "192.168.200.100"
-2025/12/28 01:35:51 [crit] 29039#29039: *11 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /nginx-logo.png HTTP/1.1", upstream: "http://192.168.200.200:8080/nginx-logo.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:35:51 [crit] 29039#29039: *11 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /poweredby.png HTTP/1.1", upstream: "http://192.168.200.200:8080/poweredby.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:35:51 [crit] 29039#29039: *11 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /favicon.ico HTTP/1.1", upstream: "http://192.168.200.200:8080/favicon.ico", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:36:33 [notice] 29066#29066: signal process started
-2025/12/28 01:37:43 [crit] 29078#29078: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET / HTTP/1.1", upstream: "http://192.168.200.200:8080/", host: "192.168.200.100"
-2025/12/28 01:37:43 [crit] 29078#29078: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /nginx-logo.png HTTP/1.1", upstream: "http://192.168.200.200:8080/nginx-logo.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:37:43 [crit] 29078#29078: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /poweredby.png HTTP/1.1", upstream: "http://192.168.200.200:8080/poweredby.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:37:43 [crit] 29078#29078: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /favicon.ico HTTP/1.1", upstream: "http://192.168.200.200:8080/favicon.ico", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:38:24 [crit] 29078#29078: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET / HTTP/1.1", upstream: "http://192.168.200.200:8080/", host: "192.168.200.100"
-2025/12/28 01:38:24 [crit] 29078#29078: *1 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /nginx-logo.png HTTP/1.1", upstream: "http://192.168.200.200:8080/nginx-logo.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:38:24 [crit] 29079#29079: *2 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /poweredby.png HTTP/1.1", upstream: "http://192.168.200.200:8080/poweredby.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 01:38:24 [crit] 29079#29079: *2 connect() to 192.168.200.200:8080 failed (13: Permission denied) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /favicon.ico HTTP/1.1", upstream: "http://192.168.200.200:8080/favicon.ico", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 14:05:00 [error] 1183#1183: *2 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET / HTTP/1.1", upstream: "http://192.168.200.200:8080/", host: "192.168.200.100"
-2025/12/28 14:05:00 [error] 1183#1183: *2 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /nginx-logo.png HTTP/1.1", upstream: "http://192.168.200.200:8080/nginx-logo.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 14:05:00 [error] 1183#1183: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /poweredby.png HTTP/1.1", upstream: "http://192.168.200.200:8080/poweredby.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 14:05:01 [error] 1183#1183: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /favicon.ico HTTP/1.1", upstream: "http://192.168.200.200:8080/favicon.ico", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 14:05:17 [error] 1183#1183: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET / HTTP/1.1", upstream: "http://192.168.200.200:8080/", host: "192.168.200.100"
-2025/12/28 14:05:17 [error] 1183#1183: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /nginx-logo.png HTTP/1.1", upstream: "http://192.168.200.200:8080/nginx-logo.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 14:05:17 [error] 1183#1183: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /poweredby.png HTTP/1.1", upstream: "http://192.168.200.200:8080/poweredby.png", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 14:05:17 [error] 1183#1183: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.200.1, server: _, request: "GET /favicon.ico HTTP/1.1", upstream: "http://192.168.200.200:8080/favicon.ico", host: "192.168.200.100", referrer: "http://192.168.200.100/"
-2025/12/28 14:59:59 [error] 1602#1602: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.200.100, server: _, request: "HEAD / HTTP/1.1", upstream: "http://192.168.200.200:8080/", host: "192.168.200.100"
-
+# 关键特征：errno 111 (Connection refused)
+# 注意：最后的 HEAD 请求来自 Nginx 节点自身 IP，可能是本地健康检查
+2025/12/28 14:05:00 [error] 1183#1183: *2 connect() failed (111: Connection refused) while connecting to upstream, client: <Client_IP>, server: _, request: "GET / HTTP/1.1", upstream: "http://<Upstream_IP>:8080/", host: "<Nginx_Node_IP>"
+...
+2025/12/28 14:59:59 [error] 1602#1602: *1 connect() failed (111: Connection refused) while connecting to upstream, client: <Nginx_Node_IP>, server: _, request: "HEAD / HTTP/1.1", upstream: "http://<Upstream_IP>:8080/", host: "<Nginx_Node_IP>"
