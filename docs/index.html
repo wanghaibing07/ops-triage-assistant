@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ops Triage Report Viewer</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f7fb;
+      --card: #ffffff;
+      --text: #1f2328;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --border: #e5e7eb;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      padding: 24px 32px 8px;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 24px;
+    }
+    p {
+      margin: 4px 0 0;
+      color: var(--muted);
+    }
+    main {
+      padding: 16px 32px 40px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+    }
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #1e3a8a;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .section-title {
+      margin: 16px 0 8px;
+      font-size: 16px;
+      color: var(--accent);
+    }
+    ul {
+      margin: 8px 0 0 18px;
+      padding: 0;
+    }
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 12px;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    .error {
+      padding: 12px 16px;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Ops Triage 报告查看器</h1>
+    <p>从 <code>docs/reports/report.json</code> 加载 primary_finding 并展示关键结论。</p>
+  </header>
+  <main>
+    <div id="content" class="card">
+      正在加载报告...
+    </div>
+  </main>
+
+  <script>
+    async function loadReport() {
+      const container = document.getElementById("content");
+      try {
+        const response = await fetch("reports/report.json", { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`无法读取报告: ${response.status}`);
+        }
+        const report = await response.json();
+        const primary = report.primary_finding;
+        if (!primary) {
+          container.innerHTML = "<div class='error'>报告中没有 primary_finding。</div>";
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="meta">
+            <div><strong>Bundle</strong><br>${report.bundle || "-"}</div>
+            <div><strong>Host</strong><br>${report.hostdir || "-"}</div>
+            <div><strong>Generated</strong><br>${report.generated_at || "-"}</div>
+            <div><span class="badge">${primary.severity}</span></div>
+          </div>
+          <div class="section-title">Primary Finding</div>
+          <p><strong>${primary.rule_id}</strong> - ${primary.root_cause}</p>
+
+          <div class="section-title">Verify</div>
+          <ul>${(primary.verify_steps || []).map(step => `<li>${step}</li>`).join("")}</ul>
+
+          <div class="section-title">Fix</div>
+          <ul>${(primary.fix_steps || []).map(step => `<li>${step}</li>`).join("")}</ul>
+
+          <div class="section-title">Evidence Snippet</div>
+          <pre>${primary.evidence_snippet || "-"}</pre>
+        `;
+      } catch (error) {
+        container.innerHTML = `<div class='error'>加载失败：${error.message}</div>`;
+      }
+    }
+
+    loadReport();
+  </script>
+</body>
+</html>

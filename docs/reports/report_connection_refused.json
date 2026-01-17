@@ -1,0 +1,39 @@
+{
+  "bundle": "/tmp/triage-bundle_connection_refused_masked.tar.gz",
+  "hostdir": "triage_node_connection_refused",
+  "generated_at": "2025-12-29T10:12:33.120581",
+  "findings": [
+    {
+      "rule_id": "NGINX_UPSTREAM_REFUSED",
+      "priority": 30,
+      "severity": "P1",
+      "root_cause": "上游端口拒绝：上游服务未监听/宕机/端口不对",
+      "verify_steps": [
+        "curl -I http://<UPSTREAM_IP>:8080/",
+        "ss -lntp | grep 8080",
+        "systemctl status tomcat"
+      ],
+      "fix_steps": [
+        "确认 Tomcat/应用监听 8080",
+        "检查防火墙/安全组放行 8080"
+      ],
+      "evidence_snippet": "2025/12/29 09:56:10 [error] 1183#1183: *2 connect() failed (111: Connection refused) while connecting to upstream, client: <CLIENT_IP>, server: _, request: \"GET / HTTP/1.1\", upstream: \"http://<UPSTREAM_IP>:8080/\", host: \"<NGINX_NODE_IP>\""
+    }
+  ],
+  "primary_finding": {
+    "rule_id": "NGINX_UPSTREAM_REFUSED",
+    "priority": 30,
+    "severity": "P1",
+    "root_cause": "上游端口拒绝：上游服务未监听/宕机/端口不对",
+    "verify_steps": [
+      "curl -I http://<UPSTREAM_IP>:8080/",
+      "ss -lntp | grep 8080",
+      "systemctl status tomcat"
+    ],
+    "fix_steps": [
+      "确认 Tomcat/应用监听 8080",
+      "检查防火墙/安全组放行 8080"
+    ],
+    "evidence_snippet": "2025/12/29 09:56:10 [error] 1183#1183: *2 connect() failed (111: Connection refused) while connecting to upstream, client: <CLIENT_IP>, server: _, request: \"GET / HTTP/1.1\", upstream: \"http://<UPSTREAM_IP>:8080/\", host: \"<NGINX_NODE_IP>\""
+  }
+}
