@@ -148,8 +148,8 @@ def main():
             "primary_finding": findings[0] if findings else None,
         }
 
-        # 输出到 out/
-        out_dir = Path(__file__).resolve().parent.parent / "out"
+        # 输出到 output/
+        out_dir = Path(__file__).resolve().parent.parent / "output"
         out_dir.mkdir(parents=True, exist_ok=True)
         out_json = out_dir / f"report_{hostdir}_{ts}.json"
         out_txt = out_dir / f"report_{hostdir}_{ts}.txt"
@@ -179,4 +179,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

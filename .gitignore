@@ -208,7 +208,7 @@ __marimo__/
 
 # Project artifacts
 out/
-triage/out/
+output/
 *.tar.gz
 *.bundle
 *.log
